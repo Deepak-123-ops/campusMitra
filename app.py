@@ -203,19 +203,12 @@ def search_college_data(question):
     return context
 
 
-# ==========================================
-# ASK OLLAMA
-# ==========================================
-
 def ask_ollama(question, context):
-
     if not context.strip():
-
         return (
             "Sorry, I could not find this information "
             "in the college knowledge base."
         )
-
 
     prompt = f"""
 You are CampusMitra, an AI-powered college assistant
@@ -249,15 +242,10 @@ DEPARTMENTS:
 When asked about departments, list only
 the departments explicitly mentioned in the context.
 
-When listing departments, always use a numbered list.
-Put each department on a separate line.
-
 COLLEGE INFORMATION:
-
 {context}
 
 STUDENT QUESTION:
-
 {question}
 
 Provide an accurate and concise answer.
@@ -265,69 +253,29 @@ Provide an accurate and concise answer.
 ANSWER:
 """
 
-
     try:
+        from groq import Groq
 
-        response = requests.post(
-
-    "http://localhost:11434/api/generate",
-
-    json={
-
-        "model": "llama3.2:3b",
-
-        "prompt": prompt,
-
-        "stream": False,
-
-        "options": {
-
-            "temperature": 0.2,
-
-            "num_predict": 150,
-
-            "num_ctx": 2048
-
-        }
-
-    },
-
-    timeout=60
-
-)
-
-
-        if response.status_code == 200:
-
-            result = response.json()
-
-            return result.get(
-                "response",
-                "No response received."
-            )
-
-
-        return (
-            "Error connecting to Ollama. "
-            "Please check whether Ollama is running."
+        client = Groq(
+            api_key=st.secrets["GROQ_API_KEY"]
         )
 
-
-    except requests.exceptions.ConnectionError:
-
-        return (
-            "Cannot connect to Ollama. "
-            "Please start Ollama and try again."
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.2,
+            max_tokens=150
         )
 
+        return response.choices[0].message.content
 
-    except requests.exceptions.Timeout:
-
-        return (
-            "Ollama took too long to respond. "
-            "Please try again."
-        )
-
+    except Exception as error:
+        return f"Error connecting to AI service: {error}"
 
 # ==========================================
 # DISPLAY PREVIOUS CHAT HISTORY
